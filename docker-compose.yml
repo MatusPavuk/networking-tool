@@ -1,12 +1,13 @@
-version: "3.8"
+version: "1.0"
 
 services:
-  bp_pavuk_matus:
+  networking_tool_service:
     build: .
-    container_name: bp_pavuk_matus
+    container_name: networking_tool
     environment:
       - DISPLAY=host.docker.internal:0
+      - QT_X11_NO_MITSHM=1
     volumes:
-      - .:/bp_pavuk_matus
-    privileged: true  # Povoliť špeciálne oprávnenia pre sieťovanie
-    network_mode: "host"  # Na hostiteľskej sieti
+      - .:/networking_tool
+    privileged: true 
+    network_mode: "host"

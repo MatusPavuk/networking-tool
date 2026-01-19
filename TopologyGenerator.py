@@ -2,6 +2,9 @@ import random
 import string
 import customtkinter
 import json
+import os
+import networkx as nx
+from networkx.readwrite import json_graph
 from customtkinter import filedialog
 from ui_elements import VisualizationAndOutput, ControlPanel
 
@@ -18,14 +21,14 @@ class TopologyGenerator(customtkinter.CTkFrame):
         # Declare and initialize variables
         self.number_of_nodes = customtkinter.StringVar()
         self.topology_type = customtkinter.StringVar()
+        self.save_node_link_only = customtkinter.BooleanVar(value=False)
         self.ip_network = [10,0,0,0]
         self.used_mac_addresses = []
         self.used_serial_numbers = []
         self.total_memory = 536870912
 
         # Create UI elements -> control_panel and visualization panels
-        self.control_panel = ControlPanel.ControlPanel(self, "topology_generator", self.number_of_nodes, self.topology_type,
-                                                       screen_switch_function, self.generate_topology, None, None, None, None, None, None)
+        self.control_panel = ControlPanel.ControlPanel(self, "topology_generator", self.number_of_nodes, self.topology_type,screen_switch_function, self.generate_topology, None, None, None, None, None, None,self.save_node_link_only)
         self.visualization = VisualizationAndOutput.VisualizationAndOutput(self)
 
     # Main method for generating topologies
@@ -78,15 +81,116 @@ class TopologyGenerator(customtkinter.CTkFrame):
             title="Save topology file as"
         )
 
-        if save_path == "":
-            print("No file selected or file save interrupted.")
+        # normalize dialog result
+        if isinstance(save_path, (tuple, list)):
+            save_path = save_path[0] if save_path else ''
+
+        # if a file-like object was returned (asksaveasfile), get its name
+        if hasattr(save_path, 'name'):
+            try:
+                save_path = save_path.name
+            except Exception:
+                save_path = str(save_path)
+
+        # handle cancel or empty
+        if not save_path:
             self.visualization.print_text("No file selected or file save interrupted.\n")
+            return
+
+        # normalize and absolute path
+        save_path_abs = os.path.abspath(os.path.expanduser(save_path))
+
+        # if user selected to save only node-link format, write node-link to chosen name (no suffix)
+        try:
+            save_node_link_only = bool(self.save_node_link_only.get()) if hasattr(self, 'save_node_link_only') else False
+        except Exception:
+            save_node_link_only = False
+
+        if save_node_link_only:
+            try:
+                # create parent directory if necessary
+                parent = os.path.dirname(save_path_abs)
+                if parent and not os.path.isdir(parent):
+                    os.makedirs(parent, exist_ok=True)
+
+                # write node-link JSON directly to chosen path
+                self._save_node_link(topology, save_path_abs, add_suffix=False)
+            except Exception as e:
+                self.visualization.print_text(f"Failed to save node-link topology: {e}\n")
+            return
+        
         else:
-            with open(save_path, 'w') as file:
-                nodes_as_list = list(topology["nodes"].values())
+            self._save_original_format(topology, save_path_abs)
+
+
+    def _save_node_link(self, topology, original_save_path, add_suffix=True):
+        """Convert topology to a NetworkX graph and save node-link JSON."""
+        # Ensure nodes are a list of node dicts
+        nodes = topology.get("nodes")
+        if isinstance(nodes, dict):
+            nodes = list(nodes.values())
+
+        G = nx.Graph()
+
+        # Add nodes with attributes
+        for n in nodes:
+            node_id = n.get("node_id")
+            # copy node attributes except node_id to avoid duplication
+            attrs = {k: v for k, v in n.items() if k != "node_id"}
+            G.add_node(node_id, **attrs)
+
+        # Add edges with attributes
+        for e in topology.get("edges", []):
+            u = e.get("start_node_id")
+            v = e.get("end_node_id")
+            # copy edge attributes except start/end ids
+            edge_attrs = {k: v for k, v in e.items() if k not in {"start_node_id", "end_node_id"}}
+            # include edge id if present
+            G.add_edge(u, v, **edge_attrs)
+
+        node_link_data = json_graph.node_link_data(G, edges="edges")
+
+        node_link_path = original_save_path
+
+        # Ensure parent directory exists
+        parent = os.path.dirname(node_link_path)
+        if parent and not os.path.isdir(parent):
+            os.makedirs(parent, exist_ok=True)
+
+        with open(node_link_path, 'w', encoding='utf-8') as f:
+            json.dump(node_link_data, f, indent=4, ensure_ascii=False)
+            try:
+                f.flush()
+                os.fsync(f.fileno())
+            except Exception:
+                pass
+
+        self.visualization.print_text("NetworkX node-link topology saved to " + node_link_path + "\n")
+
+
+    def _save_original_format(self, topology, save_path_abs):
+        """Save topology in the original JSON format to save_path_abs."""
+        try:
+            parent = os.path.dirname(save_path_abs)
+            if parent and not os.path.isdir(parent):
+                os.makedirs(parent, exist_ok=True)
+
+            with open(save_path_abs, 'w', encoding='utf-8') as file:
+                nodes_as_list = list(topology["nodes"].values()) if isinstance(topology.get("nodes"), dict) else topology.get("nodes")
                 topology["nodes"] = nodes_as_list
-                json.dump(topology, file, indent=4)
-                self.visualization.print_text("Topology saved to " + save_path + "\n")
+                json.dump(topology, file, indent=4, ensure_ascii=False)
+                file.flush()
+                try:
+                    os.fsync(file.fileno())
+                except Exception:
+                    pass
+
+            if os.path.exists(save_path_abs):
+                self.visualization.print_text(f"Topology saved to {save_path_abs}\n")
+            else:
+                self.visualization.print_text(f"Failed to save topology to {save_path_abs}\n")
+        except Exception as e:
+            self.visualization.print_text(f"Error saving topology: {e}\n")
 
 
     def _generate_nodes(self, topology, number_of_nodes):

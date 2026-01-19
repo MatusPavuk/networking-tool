@@ -45,7 +45,7 @@ Build and run the container:
 docker-compose up --build
 ```
 
-Because the app includes a GUI, an X server on the host is required and the container must be configured to display to it.
+Because the app includes a GUI, an X server on the host is required. The application has been used with VcXsrv. In order to use VcXsrv download it, start it with display number set to 0 and choose "Multiple windows".
 
 ## Usage
 
@@ -54,6 +54,10 @@ On startup the main menu lets you switch between the modules.
 ### Topology Generator
 
 Enter the number of devices and choose a topology type, then click **Generate**. Save the produced JSON file and the topology graph will be displayed; you can manipulate it or save it as an image.
+
+#### Docker + X server
+
+In order to save generated topologies to host machine, filepath /networking_application must be used as save path. This path will save generated topology files to directory with application files on host machine. For example choosing path /networking_application and specifying file name to "topology_10_fullmesh" will save file named "topology_10_fullmesh.json" and "topology_10_fullmesh_node_link.json" to host directory .../networking_tool/ .
 
 ### Communication Generator
 

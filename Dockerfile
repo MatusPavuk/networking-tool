@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13
 
 RUN apt-get update && apt-get install -y \
     libpcap-dev \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     libxcb1 \
-    libgl1-mesa-glx \
+    libgl1-mesa-dri \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

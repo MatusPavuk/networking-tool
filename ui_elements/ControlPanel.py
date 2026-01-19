@@ -7,7 +7,8 @@ class ControlPanel(customtkinter.CTkFrame):
     def __init__(self, master, variant, number_of_nodes,
                  topology_type, screen_switch_function, generate_topology_function,
                  generate_communication_function, stop_generating_communication_function,
-                 type_of_traffic, type_of_client, server_info, is_generating):
+                 type_of_traffic, type_of_client, server_info, is_generating,
+                 save_node_link_var=None):
 
         if customtkinter.get_appearance_mode() == "Light":
             super().__init__(master, fg_color="white")
@@ -30,6 +31,7 @@ class ControlPanel(customtkinter.CTkFrame):
         self.generate_topology_function = generate_topology_function
         self.generate_communication_function = generate_communication_function
         self.stop_generation = stop_generating_communication_function
+        self.save_node_link_var = save_node_link_var
         self.font_style = customtkinter.CTkFont(family="Rubik", size=20)
 
         self.client_communication_type_radio = None
@@ -111,6 +113,11 @@ class ControlPanel(customtkinter.CTkFrame):
 
             topology_type_dropdown = customtkinter.CTkComboBox(self, values=["full-mesh", "hub-and-spoke"], variable=self.topology_type, state="readonly", font=self.font_style)
             topology_type_dropdown.grid(row=5, column=0, sticky="new", padx=20)
+
+            # Checkbox: save as node-link format only
+            if self.save_node_link_var is not None:
+                save_node_link_checkbox = customtkinter.CTkCheckBox(self, text="Save in node-link format", variable=self.save_node_link_var, font=self.font_style)
+                save_node_link_checkbox.grid(row=6, column=0, sticky="w", padx=20, pady=(6, 0))
 
         elif self.variant == "communication_generator":
 
@@ -217,7 +224,7 @@ class ControlPanel(customtkinter.CTkFrame):
     def _create_buttons(self):
         if self.variant == "topology_generator":
             generate_button = customtkinter.CTkButton(self, text="Generate", height=60, command=lambda: self.generate_topology_function(), font=self.font_style)
-            generate_button.grid(row=6, column=0, sticky="sew", padx=20, pady=5)
+            generate_button.grid(row=7, column=0, sticky="sew", padx=20, pady=5)
         elif self.variant == "communication_generator":
             generate_button = customtkinter.CTkButton(self, text="Generate", height=60, command=lambda: self.generate_communication_function(), font=self.font_style)
             generate_button.grid(row=6, column=0, sticky="sew", padx=20, pady=5)
