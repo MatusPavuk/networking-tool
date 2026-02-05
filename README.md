@@ -1,9 +1,13 @@
 # Project README (English)
 
-This repository contains a desktop application which has two main modules:
+This repository contains:
 
-- Topology Generator: generates JSON files representing network topologies.
-- Communication Generator: generates network traffic streams for selected real services by crafting and sending real packets.
+- Topologies generated in the form of JSON files that are located in Generated_topologies/ folder.
+- Captures of video on demand, video live streaming, audio on demand and audio live streaming in the for of .pcap files, located in weireshark_captures/ folder.
+
+- Desktop application which has two main modules:
+    - Topology Generator: generates JSON files representing network topologies.
+    - Communication Generator: generates network traffic streams for selected real services by crafting and sending real packets.
 
 ## Technologies used:
 

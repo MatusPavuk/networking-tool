@@ -3,6 +3,8 @@ import networkx
 import matplotlib.pyplot as plt
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+import gc
 
 
 class VisualizationAndOutput(customtkinter.CTkFrame):
@@ -40,8 +42,25 @@ class VisualizationAndOutput(customtkinter.CTkFrame):
         self.visualization_canvas.grid_rowconfigure(0, weight=6)
         self.visualization_canvas.grid_rowconfigure(1, weight=1)
 
-        fig, ax = plt.subplots()
-        fig.set_size_inches(5, 4)
+        # Close previous matplotlib figure (if any) to free memory (best-effort)
+        try:
+            if self._mpl_fig is not None:
+                try:
+                    # clear references to the old figure
+                    self._mpl_fig.clear()
+                except Exception:
+                    pass
+                self._mpl_fig = None
+                try:
+                    gc.collect()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # Create a Figure instance directly (avoid pyplot state retention)
+        fig = Figure(figsize=(5, 4))
+        ax = fig.add_subplot(1, 1, 1)
         networkx.draw(G, ax=ax, with_labels=True)
 
         # Integration of graph to tkinter
@@ -64,6 +83,4 @@ class VisualizationAndOutput(customtkinter.CTkFrame):
         for edge in topology["edges"]:
             G.add_edge(edge["start_node_id"], edge["end_node_id"])
 
-        print(G.nodes)
-        print(G.edges)
         self.draw_graph(G)
